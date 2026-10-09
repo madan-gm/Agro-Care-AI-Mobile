@@ -1,0 +1,49 @@
+name: agro_care_ai_mobile
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  tflite_flutter: ^0.12.1
+  image: ^4.10.1
+  image_picker: ^1.2.3
+  geolocator: ^14.1.1
+  geocoding: ^5.0.0
+  http: ^1.6.0
+  flutter_local_notifications: ^22.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# Flutter-specific configuration
+flutter:
+
+  # Include Material Icons
+  uses-material-design: true
+
+  # TensorFlow Lite model
+  assets:
+  - assets/models/mobilenetv2_finetuned.tflite
+  - assets/classes.json
+  - assets/test/tylcv_test.jpg
+  - assets/agro_care_ai_logo.png
+  - assets/advisory/advisory.json
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/agro_care_ai_logo.png"
