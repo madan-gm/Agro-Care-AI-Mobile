@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
 import 'notification_service.dart';
 
@@ -30,7 +31,7 @@ class AgroCareApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFFF7FBF7),
       ),
-      home: const PredictionPage(),
+      home: const HomePage(),
     );
   }
 }
@@ -127,6 +128,50 @@ class _PredictionPageState extends State<PredictionPage> {
     final bytes = await pickedFile.readAsBytes();
     await _predictImage(bytes);
   }
+  
+
+
+Future<void> _pickFromFiles() async {
+  if (!_modelLoaded || _selectedCrop == null || _isPredicting) {
+    return;
+  }
+
+  try {
+    final file = await FilePicker.pickFile(
+      type: FileType.image,
+    );
+
+    if (file == null) {
+      return;
+    }
+
+    final Uint8List bytes = await file.readAsBytes();
+
+    if (bytes.isEmpty) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not read this image. Please choose another.'),
+        ),
+      );
+      return;
+    }
+
+    await _predictImage(bytes);
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Unable to select image: $e'),
+      ),
+    );
+  }
+}
+
+
+
   void _selectCrop(String crop) {
     setState(() {
       _selectedCrop = crop;
@@ -193,24 +238,6 @@ appBar: AppBar(
       fontWeight: FontWeight.bold,
     ),
   ),
-  actions: [
-    IconButton(
-      tooltip: 'Farm Weather',
-      icon: const Icon(
-        Icons.cloud_outlined,
-        color: Colors.green,
-        size: 28,
-      ),
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => const WeatherPage(),
-          ),
-        );
-      },
-    ),
-  ],
 ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -305,46 +332,58 @@ appBar: AppBar(
                   ),
                 if (_selectedImage != null)
                   const SizedBox(height: 15),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed:
-                            _isPredicting ? null : _takePhoto,
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Take Photo'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 15,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed:
-                            _isPredicting
-                                ? null
-                                : _pickFromGallery,
-                        icon: const Icon(Icons.photo_library),
-                        label: const Text('Gallery'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 15,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                
+              Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isPredicting ? null : _takePhoto,
+                          icon: const Icon(Icons.camera_alt),
+                          label: const Text('Take Photo'),
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isPredicting ? null : _pickFromGallery,
+                          icon: const Icon(Icons.photo_library),
+                          label: const Text('Gallery'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isPredicting ? null : _pickFromFiles,
+                      icon: const Icon(Icons.folder_open),
+                      label: const Text('Upload from Files'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
+            ],
               if (_isPredicting) ...[
                 const SizedBox(height: 25),
                 const CircularProgressIndicator(),
@@ -782,6 +821,172 @@ appBar: AppBar(
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+  
+class HomePage extends StatelessWidget {
+  const HomePage({super.key});
+
+  static const Color darkGreen = Color(0xFF174A2B);
+  static const Color lightGreen = Color(0xFFE8F5E9);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF7FBF7),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/agro_care_ai_logo.png',
+                  height: 135,
+                  width: 135,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Agro Care AI',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    color: darkGreen,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Smart farming starts here',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 40),
+                _HomeOptionCard(
+                  icon: Icons.cloud_outlined,
+                  title: 'Weather',
+                  subtitle: 'Forecasts, rain and heat alerts',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const WeatherPage(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 18),
+                _HomeOptionCard(
+                  icon: Icons.eco_outlined,
+                  title: 'Plant Disease Detection',
+                  subtitle: 'Scan or upload a crop leaf image',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PredictionPage(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 28),
+                const Text(
+                  'Supporting healthier crops and sustainable farming',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _HomeOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      color: Colors.white,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFFDCEBDD)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  icon,
+                  size: 34,
+                  color: const Color(0xFF236B3C),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF174A2B),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 18,
+                color: Color(0xFF236B3C),
+              ),
+            ],
+          ),
         ),
       ),
     );

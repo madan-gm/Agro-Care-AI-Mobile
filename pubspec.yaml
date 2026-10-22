@@ -17,6 +17,7 @@ dependencies:
   tflite_flutter: ^0.12.1
   image: ^4.10.1
   image_picker: ^1.2.3
+  file_picker: ^13.1.0
   geolocator: ^14.1.1
   geocoding: ^5.0.0
   http: ^1.6.0
