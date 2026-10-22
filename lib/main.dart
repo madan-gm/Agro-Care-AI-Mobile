@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'ai_service.dart';
 import 'weather_page.dart';
+import 'app_language.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,29 +46,38 @@ class _PredictionPageState extends State<PredictionPage> {
   final ImagePicker _picker = ImagePicker();
   bool _modelLoaded = false;
   bool _isPredicting = false;
-  String _status = 'Loading AI model...';
+  String _status = appText('Loading AI model...', 'AI ಮಾದರಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...');
   String? _selectedCrop;
   String? _disease;
   double? _confidence;
   Map<String, dynamic>? _advisory;
   Uint8List? _selectedImage;
-  // English by default.
-  String _selectedLanguage = 'en';
+  // Uses the app-wide language selected on the Home page.
+  String _selectedLanguage = appLanguage.value;
   @override
   void initState() {
     super.initState();
+    appLanguage.addListener(_onAppLanguageChanged);
+    _selectedLanguage = appLanguage.value;
     _loadModel();
   }
+  void _onAppLanguageChanged() {
+    if (!mounted) return;
+    setState(() {
+      _selectedLanguage = appLanguage.value;
+    });
+  }
+
   Future<void> _loadModel() async {
     try {
       await _aiService.loadModel();
       setState(() {
         _modelLoaded = true;
-        _status = 'Select a crop to get started';
+        _status = appText('Select a crop to get started', 'ಪ್ರಾರಂಭಿಸಲು ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ');
       });
     } catch (e) {
       setState(() {
-        _status = 'Failed to load AI model: $e';
+        _status = appText('Failed to load AI model: $e', 'AI ಮಾದರಿ ಲೋಡ್ ಆಗಲಿಲ್ಲ: $e');
       });
     }
   }
@@ -78,7 +88,7 @@ class _PredictionPageState extends State<PredictionPage> {
       _confidence = null;
       _advisory = null;
       _isPredicting = true;
-      _status = 'Analyzing your leaf...';
+      _status = appText('Analyzing your leaf...', 'ನಿಮ್ಮ ಎಲೆಯನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...');
     });
     try {
       final result = await _aiService.predictImage(
@@ -93,12 +103,12 @@ class _PredictionPageState extends State<PredictionPage> {
         _confidence = result.confidence;
         _advisory = advisory;
         _isPredicting = false;
-        _status = 'Analysis completed';
+        _status = appText('Analysis completed', 'ವಿಶ್ಲೇಷಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ');
       });
     } catch (e) {
       setState(() {
         _isPredicting = false;
-        _status = 'Prediction failed: $e';
+        _status = appText('Prediction failed: $e', 'ಮುನ್ಸೂಚನೆ ವಿಫಲವಾಗಿದೆ: $e');
       });
     }
   }
@@ -185,6 +195,7 @@ Future<void> _pickFromFiles() async {
   void _selectLanguage(String language) {
     setState(() {
       _selectedLanguage = language;
+      appLanguage.value = language;
     });
   }
   String _formatDiseaseName(String disease) {
@@ -195,11 +206,11 @@ Future<void> _pickFromFiles() async {
   }
   String _confidenceLabel(double confidence) {
     if (confidence >= 0.70) {
-      return 'High Confidence';
+      return appText('High Confidence', 'ಹೆಚ್ಚಿನ ವಿಶ್ವಾಸ');
     } else if (confidence >= 0.50) {
-      return 'Moderate Confidence';
+      return appText('Moderate Confidence', 'ಮಧ್ಯಮ ವಿಶ್ವಾಸ');
     } else {
-      return 'Low Confidence';
+      return appText('Low Confidence', 'ಕಡಿಮೆ ವಿಶ್ವಾಸ');
     }
   }
   IconData _confidenceIcon(double confidence) {
@@ -222,6 +233,7 @@ Future<void> _pickFromFiles() async {
   }
   @override
   void dispose() {
+    appLanguage.removeListener(_onAppLanguageChanged);
     _aiService.close();
     super.dispose();
   }
@@ -232,7 +244,7 @@ appBar: AppBar(
   backgroundColor: Colors.transparent,
   elevation: 0,
   centerTitle: true,
-  title: const Text(
+  title: Text(
     'Agro Care AI',
     style: TextStyle(
       fontWeight: FontWeight.bold,
@@ -252,8 +264,8 @@ appBar: AppBar(
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Smart Crop Health Check',
+              Text(
+                appText('Smart Crop Health Check', 'ಸ್ಮಾರ್ಟ್ ಬೆಳೆ ಆರೋಗ್ಯ ಪರಿಶೀಲನೆ'),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -262,7 +274,7 @@ appBar: AppBar(
               ),
               const SizedBox(height: 8),
               Text(
-                'Detect crop diseases using AI',
+                appText('Detect crop diseases using AI', 'AI ಬಳಸಿ ಬೆಳೆ ರೋಗಗಳನ್ನು ಪತ್ತೆಹಚ್ಚಿ'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -272,10 +284,10 @@ appBar: AppBar(
               const SizedBox(height: 25),
               _buildStatusCard(),
               const SizedBox(height: 25),
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  '1. Select your crop',
+                  appText('1. Select your crop', '1. ನಿಮ್ಮ ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ'),
                   style: TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.bold,
@@ -309,10 +321,10 @@ appBar: AppBar(
               ),
               const SizedBox(height: 25),
               if (_selectedCrop != null) ...[
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '2. Add a leaf photo',
+                    appText('2. Add a leaf photo', '2. ಎಲೆಯ ಫೋಟೋ ಸೇರಿಸಿ'),
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.bold,
@@ -341,7 +353,7 @@ appBar: AppBar(
                         child: ElevatedButton.icon(
                           onPressed: _isPredicting ? null : _takePhoto,
                           icon: const Icon(Icons.camera_alt),
-                          label: const Text('Take Photo'),
+                          label: Text(appText('Take Photo', 'ಫೋಟೋ ತೆಗೆಯಿರಿ')),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
@@ -355,7 +367,7 @@ appBar: AppBar(
                         child: OutlinedButton.icon(
                           onPressed: _isPredicting ? null : _pickFromGallery,
                           icon: const Icon(Icons.photo_library),
-                          label: const Text('Gallery'),
+                          label: Text(appText('Gallery', 'ಗ್ಯಾಲರಿ')),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
@@ -372,7 +384,7 @@ appBar: AppBar(
                     child: OutlinedButton.icon(
                       onPressed: _isPredicting ? null : _pickFromFiles,
                       icon: const Icon(Icons.folder_open),
-                      label: const Text('Upload from Files'),
+                      label: Text(appText('Upload from Files', 'ಫೈಲ್‌ಗಳಿಂದ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ')),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
@@ -388,8 +400,8 @@ appBar: AppBar(
                 const SizedBox(height: 25),
                 const CircularProgressIndicator(),
                 const SizedBox(height: 10),
-                const Text(
-                  'AI is analyzing the leaf...',
+                Text(
+                  appText('AI is analyzing the leaf...', 'AI ಎಲೆಯನ್ನು ವಿಶ್ಲೇಷಿಸುತ್ತಿದೆ...'),
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                   ),
@@ -468,8 +480,8 @@ appBar: AppBar(
             color: Colors.green,
           ),
           const SizedBox(height: 10),
-          const Text(
-            'AI ANALYSIS',
+          Text(
+            appText('AI ANALYSIS', 'AI ವಿಶ್ಲೇಷಣೆ'),
             style: TextStyle(
               fontSize: 13,
               letterSpacing: 1.2,
@@ -515,10 +527,10 @@ appBar: AppBar(
             ),
           ),
           const SizedBox(height: 20),
-          const Align(
+          Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Confidence',
+              appText('Confidence', 'ವಿಶ್ವಾಸ ಮಟ್ಟ'),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -579,10 +591,10 @@ appBar: AppBar(
                 Expanded(
                   child: Text(
                     confidence >= 0.70
-                        ? 'The AI is confident in this prediction.'
+                        ? appText('The AI is confident in this prediction.', 'ಈ ಮುನ್ಸೂಚನೆಯ ಬಗ್ಗೆ AI ಗೆ ಹೆಚ್ಚಿನ ವಿಶ್ವಾಸವಿದೆ.')
                         : confidence >= 0.50
-                            ? 'The prediction has moderate confidence. Check the image quality.'
-                            : 'Low confidence. Please take a clearer leaf photo.',
+                            ? appText('The prediction has moderate confidence. Check the image quality.', 'ಮುನ್ಸೂಚನೆಯ ವಿಶ್ವಾಸ ಮಧ್ಯಮವಾಗಿದೆ. ಚಿತ್ರದ ಗುಣಮಟ್ಟವನ್ನು ಪರಿಶೀಲಿಸಿ.')
+                            : appText('Low confidence. Please take a clearer leaf photo.', 'ವಿಶ್ವಾಸ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಎಲೆಯ ಸ್ಪಷ್ಟವಾದ ಫೋಟೋ ತೆಗೆಯಿರಿ.'),
                     style: TextStyle(
                       color: confidenceColor,
                       fontWeight: FontWeight.w500,
@@ -597,10 +609,10 @@ appBar: AppBar(
           // -----------------------------------------
           if (_advisory != null) ...[
             const SizedBox(height: 28),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '3. Disease Advisory',
+                appText('3. Disease Advisory', '3. ರೋಗದ ಸಲಹೆ'),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -612,7 +624,7 @@ appBar: AppBar(
             const SizedBox(height: 18),
             _advisorySection(
               title: _selectedLanguage == 'en'
-                  ? 'About the Disease'
+                  ? appText('About the Disease', 'ರೋಗದ ಬಗ್ಗೆ')
                   : 'ರೋಗದ ಬಗ್ಗೆ',
               icon: Icons.info_outline,
               text: _getAdvisoryText('about'),
@@ -621,7 +633,7 @@ appBar: AppBar(
             const SizedBox(height: 15),
             _advisorySection(
               title: _selectedLanguage == 'en'
-                  ? 'Treatment'
+                  ? appText('Treatment', 'ಚಿಕಿತ್ಸೆ')
                   : 'ಚಿಕಿತ್ಸೆ',
               icon: Icons.medical_services_outlined,
               text: _getAdvisoryText('treatment'),
@@ -630,7 +642,7 @@ appBar: AppBar(
             const SizedBox(height: 15),
             _advisorySection(
               title: _selectedLanguage == 'en'
-                  ? 'Prevention'
+                  ? appText('Prevention', 'ತಡೆಗಟ್ಟುವಿಕೆ')
                   : 'ತಡೆಗಟ್ಟುವಿಕೆ',
               icon: Icons.shield_outlined,
               text: _getAdvisoryText('prevention'),
@@ -827,14 +839,29 @@ appBar: AppBar(
   }
 }
   
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   static const Color darkGreen = Color(0xFF174A2B);
   static const Color lightGreen = Color(0xFFE8F5E9);
 
   @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String get _language => appLanguage.value;
+
+  void _setLanguage(String language) {
+    setState(() {
+      appLanguage.value = language;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final bool kannada = _language == 'kn';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7FBF7),
       body: SafeArea(
@@ -844,6 +871,33 @@ class HomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFDCEBDD)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _LanguageOption(
+                          label: 'English',
+                          selected: !kannada,
+                          onTap: () => _setLanguage('en'),
+                        ),
+                        _LanguageOption(
+                          label: 'ಕನ್ನಡ',
+                          selected: kannada,
+                          onTap: () => _setLanguage('kn'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Image.asset(
                   'assets/agro_care_ai_logo.png',
                   height: 135,
@@ -851,63 +905,89 @@ class HomePage extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Agro Care AI',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 30,
                     fontWeight: FontWeight.bold,
-                    color: darkGreen,
+                    color: HomePage.darkGreen,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Smart farming starts here',
+                Text(
+                  kannada ? 'ಸ್ಮಾರ್ಟ್ ಕೃಷಿ ಇಲ್ಲಿಂದ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ' : 'Smart farming starts here',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black54,
-                  ),
+                  style: const TextStyle(fontSize: 16, color: Colors.black54),
                 ),
                 const SizedBox(height: 40),
                 _HomeOptionCard(
                   icon: Icons.cloud_outlined,
-                  title: 'Weather',
-                  subtitle: 'Forecasts, rain and heat alerts',
+                  title: kannada ? 'ಹವಾಮಾನ' : 'Weather',
+                  subtitle: kannada ? 'ಮುನ್ಸೂಚನೆ, ಮಳೆ ಮತ್ತು ಬಿಸಿಲಿನ ಎಚ್ಚರಿಕೆಗಳು' : 'Forecasts, rain and heat alerts',
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => const WeatherPage(),
-                      ),
+                      MaterialPageRoute<void>(builder: (_) => const WeatherPage()),
                     );
                   },
                 ),
                 const SizedBox(height: 18),
                 _HomeOptionCard(
                   icon: Icons.eco_outlined,
-                  title: 'Plant Disease Detection',
-                  subtitle: 'Scan or upload a crop leaf image',
+                  title: kannada ? 'ಸಸ್ಯ ರೋಗ ಪತ್ತೆ' : 'Plant Disease Detection',
+                  subtitle: kannada ? 'ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರವನ್ನು ತೆಗೆಯಿರಿ ಅಥವಾ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ' : 'Scan or upload a crop leaf image',
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => const PredictionPage(),
-                      ),
+                      MaterialPageRoute<void>(builder: (_) => const PredictionPage()),
                     );
                   },
                 ),
                 const SizedBox(height: 28),
-                const Text(
-                  'Supporting healthier crops and sustainable farming',
+                Text(
+                  kannada
+                      ? 'ಆರೋಗ್ಯಕರ ಬೆಳೆಗಳು ಮತ್ತು ಸುಸ್ಥಿರ ಕೃಷಿಗೆ ಬೆಂಬಲ'
+                      : 'Supporting healthier crops and sustainable farming',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
+                  style: const TextStyle(fontSize: 13, color: Colors.black54),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LanguageOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? Colors.green : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: selected ? Colors.white : Colors.black87,
           ),
         ),
       ),
@@ -950,11 +1030,7 @@ class _HomeOptionCard extends StatelessWidget {
                   color: const Color(0xFFE8F5E9),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Icon(
-                  icon,
-                  size: 34,
-                  color: const Color(0xFF236B3C),
-                ),
+                child: Icon(icon, size: 34, color: const Color(0xFF236B3C)),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -972,19 +1048,12 @@ class _HomeOptionCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Colors.black54,
-                      ),
+                      style: const TextStyle(fontSize: 13, color: Colors.black54),
                     ),
                   ],
                 ),
               ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 18,
-                color: Color(0xFF236B3C),
-              ),
+              const Icon(Icons.arrow_forward_ios, size: 18, color: Color(0xFF236B3C)),
             ],
           ),
         ),
@@ -992,3 +1061,4 @@ class _HomeOptionCard extends StatelessWidget {
     );
   }
 }
+

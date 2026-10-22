@@ -3,6 +3,7 @@ import 'notification_service.dart';
 
 import 'location_service.dart';
 import 'weather_service.dart';
+import 'app_language.dart';
 
 class WeatherPage extends StatefulWidget {
   const WeatherPage({super.key});
@@ -30,11 +31,19 @@ class _WeatherPageState extends State<WeatherPage> {
   @override
   void initState() {
     super.initState();
+    appLanguage.addListener(_onAppLanguageChanged);
     _useGps();
   }
 
+  void _onAppLanguageChanged() {
+    if (mounted) setState(() {});
+  }
+
+  String _t(String english, String kannada) => appText(english, kannada);
+
   @override
   void dispose() {
+    appLanguage.removeListener(_onAppLanguageChanged);
     _latitudeController.dispose();
     _longitudeController.dispose();
     _nameController.dispose();
@@ -90,7 +99,7 @@ class _WeatherPageState extends State<WeatherPage> {
 
     if (latitude == null || longitude == null) {
       setState(() {
-        _error = 'Enter valid latitude and longitude numbers.';
+        _error = _t('Enter valid latitude and longitude numbers.', 'ಸರಿಯಾದ ಅಕ್ಷಾಂಶ ಮತ್ತು ರೇಖಾಂಶ ಸಂಖ್ಯೆಗಳು ನಮೂದಿಸಿ.');
       });
       return;
     }
@@ -238,27 +247,21 @@ Future<void> _checkWeatherAlerts(
     final code = _number(current['weather_code']);
 
     if (code >= 95) {
-      return 'Thunderstorms are reported. Avoid fieldwork during lightning '
-          'and secure exposed equipment.';
+      return _t('Thunderstorms are reported. Avoid fieldwork during lightning and secure exposed equipment.', 'ಗುಡುಗು ಸಹಿತ ಮಳೆಯಿದೆ. ಮಿಂಚಿನ ಸಮಯದಲ್ಲಿ ಹೊಲದ ಕೆಲಸ ತಪ್ಪಿಸಿ ಮತ್ತು ತೆರೆದ ಉಪಕರಣಗಳನ್ನು ಸುರಕ್ಷಿತವಾಗಿಡಿ.');
     }
     if (rain > 0 || precipitation > 0) {
-      return 'Rain is occurring or expected now. Check field drainage and '
-          'avoid unnecessary irrigation while the soil is wet.';
+      return _t('Rain is occurring or expected now. Check field drainage and avoid unnecessary irrigation while the soil is wet.', 'ಈಗ ಮಳೆ ಬರುತ್ತಿದೆ ಅಥವಾ ನಿರೀಕ್ಷಿಸಲಾಗಿದೆ. ಹೊಲದ ನೀರು ಹರಿವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮಣ್ಣು ಒದ್ದೆಯಾಗಿರುವಾಗ ಅನಗತ್ಯ ನೀರಾವರಿ ತಪ್ಪಿಸಿ.');
     }
     if (temperature >= 35) {
-      return 'High temperatures may stress crops. Check soil moisture and '
-          'irrigate according to crop needs and local guidance.';
+      return _t('High temperatures may stress crops. Check soil moisture and irrigate according to crop needs and local guidance.', 'ಹೆಚ್ಚಿನ ತಾಪಮಾನವು ಬೆಳೆಗಳಿಗೆ ಒತ್ತಡ ಉಂಟುಮಾಡಬಹುದು. ಮಣ್ಣಿನ ತೇವಾಂಶ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಬೆಳೆ ಅಗತ್ಯಕ್ಕೆ ತಕ್ಕಂತೆ ನೀರಾವರಿ ಮಾಡಿ.');
     }
     if (wind >= 30) {
-      return 'Strong winds may affect spraying and young plants. Consider '
-          'postponing spraying and secure vulnerable supports.';
+      return _t('Strong winds may affect spraying and young plants. Consider postponing spraying and secure vulnerable supports.', 'ಬಲವಾದ ಗಾಳಿಯು ಸಿಂಪಡಣೆ ಮತ್ತು ಎಳೆಯ ಸಸಿಗಳಿಗೆ ಹಾನಿ ಮಾಡಬಹುದು. ಸಿಂಪಡಣೆಯನ್ನು ಮುಂದೂಡಿ ಮತ್ತು ಸಸಿಗಳಿಗೆ ಆಧಾರ ನೀಡಿ.');
     }
     if (code == 0 || code == 1) {
-      return 'Conditions appear mostly clear. Check soil moisture before '
-          'irrigating and follow the crop’s usual watering schedule.';
+      return _t('Conditions appear mostly clear. Check soil moisture before irrigating and follow the crop’s usual watering schedule.', 'ಹವಾಮಾನ ಬಹುತೇಕ ಸ್ಪಷ್ಟವಾಗಿದೆ. ನೀರಾವರಿಗೂ ಮೊದಲು ಮಣ್ಣಿನ ತೇವಾಂಶ ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಸಾಮಾನ್ಯ ನೀರಿನ ವೇಳಾಪಟ್ಟಿಯನ್ನು ಅನುಸರಿಸಿ.');
     }
-    return 'Check soil moisture and local field conditions before irrigation '
-        'or spraying. Forecasts cannot replace on-site assessment.';
+    return _t('Check soil moisture and local field conditions before irrigation or spraying. Forecasts cannot replace on-site assessment.', 'ನೀರಾವರಿ ಅಥವಾ ಸಿಂಪಡಣೆಗೆ ಮೊದಲು ಮಣ್ಣಿನ ತೇವಾಂಶ ಮತ್ತು ಹೊಲದ ಪರಿಸ್ಥಿತಿಯನ್ನು ಪರಿಶೀಲಿಸಿ. ಮುನ್ಸೂಚನೆ ಸ್ಥಳದಲ್ಲಿನ ಪರಿಶೀಲನೆಗೆ ಪರ್ಯಾಯವಲ್ಲ.');
   }
 
   @override
@@ -270,11 +273,11 @@ Future<void> _checkWeatherAlerts(
     return Scaffold(
       
 appBar: AppBar(
-  title: const Text('Farm Weather'),
+  title: Text(_t('Farm Weather', 'ಕೃಷಿ ಹವಾಮಾನ')),
   backgroundColor: Colors.green.shade100,
   actions: [
     IconButton(
-      tooltip: 'Test Notification',
+      tooltip: _t('Test Notification', 'ಅಧಿಸೂಚನೆ ಪರೀಕ್ಷೆ'),
       icon: const Icon(
         Icons.notifications_active_outlined,
         color: Colors.green,
@@ -290,9 +293,11 @@ appBar: AppBar(
           if (!context.mounted) return;
 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Test notification sent!'),
-            ),
+            SnackBar(
+              content: Text(
+                _t('Test notification sent!', 'ಪರೀಕ್ಷಾ ಅಧಿಸೂಚನೆ ಕಳುಹಿಸಲಾಗಿದೆ!'),
+              ),
+            )
           );
         } catch (e) {
           if (!context.mounted) return;
@@ -326,8 +331,8 @@ appBar: AppBar(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Choose your location',
+                      Text(
+                        _t('Choose your location', 'ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಆಯ್ಕೆಮಾಡಿ'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -339,14 +344,14 @@ appBar: AppBar(
                         child: ElevatedButton.icon(
                           onPressed: _loading ? null : _useGps,
                           icon: const Icon(Icons.my_location),
-                          label: const Text('Use current GPS location'),
+                          label: Text(_t('Use current GPS location', 'ಪ್ರಸ್ತುತ GPS ಸ್ಥಳ ಬಳಸಿ')),
                         ),
                       ),
                       const SizedBox(height: 12),
                       TextField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Village or field name (optional)',
+                        decoration: InputDecoration(
+                          labelText: _t('Village or field name (optional)', 'ಗ್ರಾಮ ಅಥವಾ ಹೊಲದ ಹೆಸರು (ಐಚ್ಛಿಕ)'),
                           border: OutlineInputBorder(),
                         ),
                       ),
@@ -361,8 +366,8 @@ appBar: AppBar(
                                 decimal: true,
                                 signed: true,
                               ),
-                              decoration: const InputDecoration(
-                                labelText: 'Latitude',
+                              decoration: InputDecoration(
+                                labelText: _t('Latitude', 'ಅಕ್ಷಾಂಶ'),
                                 hintText: 'e.g. 12.9716',
                                 border: OutlineInputBorder(),
                               ),
@@ -377,8 +382,8 @@ appBar: AppBar(
                                 decimal: true,
                                 signed: true,
                               ),
-                              decoration: const InputDecoration(
-                                labelText: 'Longitude',
+                              decoration: InputDecoration(
+                                labelText: _t('Longitude', 'ರೇಖಾಂಶ'),
                                 hintText: 'e.g. 77.5946',
                                 border: OutlineInputBorder(),
                               ),
@@ -393,7 +398,7 @@ appBar: AppBar(
                           onPressed:
                               _loading ? null : _useManualLocation,
                           icon: const Icon(Icons.location_on_outlined),
-                          label: const Text('Get weather for these coordinates'),
+                          label: Text(_t('Get weather for these coordinates', 'ಈ ನಿರ್ದೇಶಾಂಕಗಳ ಹವಾಮಾನ ಪಡೆಯಿರಿ')),
                         ),
                       ),
                       if (_location != null) ...[
@@ -410,7 +415,7 @@ appBar: AppBar(
                 ),
               ),
               if (_loading)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(28),
                   child: Center(child: CircularProgressIndicator()),
                 ),
@@ -453,7 +458,7 @@ appBar: AppBar(
                           ),
                         ),
                         Text(
-                          'Feels like '
+                          '${_t('Feels like ', 'ಅನುಭವವಾಗುವ ತಾಪಮಾನ ')}'
                           '${_decimal(current['apparent_temperature']).round()}°C',
                         ),
                         const Divider(height: 28),
@@ -462,17 +467,17 @@ appBar: AppBar(
                           children: [
                             _metric(
                               Icons.water_drop,
-                              'Humidity',
+                              _t('Humidity', 'ಆರ್ದ್ರತೆ'),
                               '${_number(current['relative_humidity_2m'])}%',
                             ),
                             _metric(
                               Icons.air,
-                              'Wind',
+                              _t('Wind', 'ಗಾಳಿ'),
                               '${_number(current['wind_speed_10m'])} km/h',
                             ),
                             _metric(
                               Icons.grain,
-                              'Rain',
+                              _t('Rain', 'ಮಳೆ'),
                               '${_decimal(current['rain']).toStringAsFixed(1)} mm',
                             ),
                           ],
@@ -484,8 +489,8 @@ appBar: AppBar(
               ],
               if (hourly != null) ...[
                 const SizedBox(height: 20),
-                const Text(
-                  'Hourly rain forecast',
+                Text(
+                  _t('Hourly rain forecast', 'ಗಂಟೆಯ ಮಳೆ ಮುನ್ಸೂಚನೆ'),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -527,8 +532,8 @@ appBar: AppBar(
               ],
               if (daily != null) ...[
                 const SizedBox(height: 20),
-                const Text(
-                  '7-day forecast',
+                Text(
+                  _t('7-day forecast', '7 ದಿನಗಳ ಮುನ್ಸೂಚನೆ'),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -573,8 +578,8 @@ appBar: AppBar(
               ],
               if (current != null) ...[
                 const SizedBox(height: 20),
-                const Text(
-                  'Farming weather advice',
+                Text(
+                  _t('Farming weather advice', 'ಕೃಷಿ ಹವಾಮಾನ ಸಲಹೆ'),
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -592,11 +597,10 @@ appBar: AppBar(
                     ),
                   ),
                 ),
-                const Padding(
+                Padding(
                   padding: EdgeInsets.symmetric(vertical: 10),
                   child: Text(
-                    'Weather guidance is general. Check local conditions and '
-                    'official agricultural advice before making farm decisions.',
+                    _t('Weather guidance is general. Check local conditions and official agricultural advice before making farm decisions.', 'ಹವಾಮಾನ ಸಲಹೆ ಸಾಮಾನ್ಯವಾಗಿದೆ. ಕೃಷಿ ನಿರ್ಧಾರಗಳ ಮೊದಲು ಸ್ಥಳೀಯ ಪರಿಸ್ಥಿತಿ ಮತ್ತು ಅಧಿಕೃತ ಕೃಷಿ ಸಲಹೆ ಪರಿಶೀಲಿಸಿ.'),
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ),
