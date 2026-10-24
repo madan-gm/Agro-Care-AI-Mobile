@@ -1,3 +1,12 @@
+﻿import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'farming_chat_page.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'scan_history_service.dart';
+import 'scan_history_page.dart';
+import 'dashboard_page.dart';
+
 import 'package:file_picker/file_picker.dart';
 import 'dart:typed_data';
 import 'notification_service.dart';
@@ -11,6 +20,14 @@ import 'app_language.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: const AndroidDebugProvider(),
+  );
 
   await NotificationService.initialize();
   await NotificationService.requestPermission();
@@ -43,10 +60,13 @@ class PredictionPage extends StatefulWidget {
 }
 class _PredictionPageState extends State<PredictionPage> {
   final AiService _aiService = AiService();
+  final ScanHistoryService _historyService = ScanHistoryService();
   final ImagePicker _picker = ImagePicker();
+  final FlutterTts _flutterTts = FlutterTts();
+  bool _isSpeaking = false;
   bool _modelLoaded = false;
   bool _isPredicting = false;
-  String _status = appText('Loading AI model...', 'AI ಮಾದರಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...');
+  String _status = appText('Loading AI model...', 'AI à²®à²¾à²¦à²°à²¿ à²²à³‹à²¡à³ à²†à²—à³à²¤à³à²¤à²¿à²¦à³†...');
   String? _selectedCrop;
   String? _disease;
   double? _confidence;
@@ -54,6 +74,51 @@ class _PredictionPageState extends State<PredictionPage> {
   Uint8List? _selectedImage;
   // Uses the app-wide language selected on the Home page.
   String _selectedLanguage = appLanguage.value;
+  Future<void> _speakAdvisory() async {
+  if (_disease == null) return;
+
+  final diseaseName = _formatDiseaseName(_disease!);
+
+  final about = _getAdvisoryText('about');
+  final treatment = _getAdvisoryText('treatment');
+  final prevention = _getAdvisoryText('prevention');
+
+  final languageCode =
+      _selectedLanguage == 'kn' ? 'kn-IN' : 'en-IN';
+
+  final speechText = _selectedLanguage == 'kn'
+      ? 'à²°à³‹à²—à²¦ à²¹à³†à²¸à²°à³: $diseaseName. '
+          'à²°à³‹à²—à²¦ à²¬à²—à³à²—à³†: $about. '
+          'à²šà²¿à²•à²¿à²¤à³à²¸à³†: $treatment. '
+          'à²¤à²¡à³†à²—à²Ÿà³à²Ÿà³à²µà²¿à²•à³†: $prevention.'
+      : 'Detected disease: $diseaseName. '
+          'About the disease: $about. '
+          'Treatment: $treatment. '
+          'Prevention: $prevention.';
+
+  await _flutterTts.stop();
+  await _flutterTts.setLanguage(languageCode);
+  await _flutterTts.setSpeechRate(0.45);
+  await _flutterTts.setPitch(1.0);
+
+  setState(() => _isSpeaking = true);
+
+  await _flutterTts.speak(speechText);
+}
+
+Future<void> _pauseSpeech() async {
+  await _flutterTts.pause();
+  if (mounted) {
+    setState(() => _isSpeaking = false);
+  }
+}
+
+Future<void> _stopSpeech() async {
+  await _flutterTts.stop();
+  if (mounted) {
+    setState(() => _isSpeaking = false);
+  }
+}
   @override
   void initState() {
     super.initState();
@@ -73,11 +138,11 @@ class _PredictionPageState extends State<PredictionPage> {
       await _aiService.loadModel();
       setState(() {
         _modelLoaded = true;
-        _status = appText('Select a crop to get started', 'ಪ್ರಾರಂಭಿಸಲು ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ');
+        _status = appText('Select a crop to get started', 'à²ªà³à²°à²¾à²°à²‚à²­à²¿à²¸à²²à³ à²¬à³†à²³à³†à²¯à²¨à³à²¨à³ à²†à²¯à³à²•à³†à²®à²¾à²¡à²¿');
       });
     } catch (e) {
       setState(() {
-        _status = appText('Failed to load AI model: $e', 'AI ಮಾದರಿ ಲೋಡ್ ಆಗಲಿಲ್ಲ: $e');
+        _status = appText('Failed to load AI model: $e', 'AI à²®à²¾à²¦à²°à²¿ à²²à³‹à²¡à³ à²†à²—à²²à²¿à²²à³à²²: $e');
       });
     }
   }
@@ -88,7 +153,7 @@ class _PredictionPageState extends State<PredictionPage> {
       _confidence = null;
       _advisory = null;
       _isPredicting = true;
-      _status = appText('Analyzing your leaf...', 'ನಿಮ್ಮ ಎಲೆಯನ್ನು ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ...');
+      _status = appText('Analyzing your leaf...', 'à²¨à²¿à²®à³à²® à²Žà²²à³†à²¯à²¨à³à²¨à³ à²µà²¿à²¶à³à²²à³‡à²·à²¿à²¸à²²à²¾à²—à³à²¤à³à²¤à²¿à²¦à³†...');
     });
     try {
       final result = await _aiService.predictImage(
@@ -98,17 +163,33 @@ class _PredictionPageState extends State<PredictionPage> {
       final advisory = _aiService.getAdvisory(
         result.className,
       );
+      await _historyService.saveScan(
+        crop: _selectedCrop!,
+        disease: result.className,
+        confidence: result.confidence,
+        imageBytes: bytes,
+        advisory: advisory,
+      );
       setState(() {
         _disease = result.className;
         _confidence = result.confidence;
         _advisory = advisory;
         _isPredicting = false;
-        _status = appText('Analysis completed', 'ವಿಶ್ಲೇಷಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ');
+        _status = appText('Analysis completed', 'à²µà²¿à²¶à³à²²à³‡à²·à²£à³† à²ªà³‚à²°à³à²£à²—à³Šà²‚à²¡à²¿à²¦à³†');
       });
+      if (advisory != null) {
+        await Future.delayed(
+          const Duration(milliseconds: 800),
+        );
+
+        if (!mounted) return;
+
+        await _speakAdvisory();
+      }
     } catch (e) {
       setState(() {
         _isPredicting = false;
-        _status = appText('Prediction failed: $e', 'ಮುನ್ಸೂಚನೆ ವಿಫಲವಾಗಿದೆ: $e');
+        _status = appText('Prediction failed: $e', 'à²®à³à²¨à³à²¸à³‚à²šà²¨à³† à²µà²¿à²«à²²à²µà²¾à²—à²¿à²¦à³†: $e');
       });
     }
   }
@@ -138,7 +219,7 @@ class _PredictionPageState extends State<PredictionPage> {
     final bytes = await pickedFile.readAsBytes();
     await _predictImage(bytes);
   }
-  
+
 
 
 Future<void> _pickFromFiles() async {
@@ -206,11 +287,11 @@ Future<void> _pickFromFiles() async {
   }
   String _confidenceLabel(double confidence) {
     if (confidence >= 0.70) {
-      return appText('High Confidence', 'ಹೆಚ್ಚಿನ ವಿಶ್ವಾಸ');
+      return appText('High Confidence', 'à²¹à³†à²šà³à²šà²¿à²¨ à²µà²¿à²¶à³à²µà²¾à²¸');
     } else if (confidence >= 0.50) {
-      return appText('Moderate Confidence', 'ಮಧ್ಯಮ ವಿಶ್ವಾಸ');
+      return appText('Moderate Confidence', 'à²®à²§à³à²¯à²® à²µà²¿à²¶à³à²µà²¾à²¸');
     } else {
-      return appText('Low Confidence', 'ಕಡಿಮೆ ವಿಶ್ವಾಸ');
+      return appText('Low Confidence', 'à²•à²¡à²¿à²®à³† à²µà²¿à²¶à³à²µà²¾à²¸');
     }
   }
   IconData _confidenceIcon(double confidence) {
@@ -234,6 +315,7 @@ Future<void> _pickFromFiles() async {
   @override
   void dispose() {
     appLanguage.removeListener(_onAppLanguageChanged);
+    _flutterTts.stop();
     _aiService.close();
     super.dispose();
   }
@@ -265,7 +347,7 @@ appBar: AppBar(
               ),
               const SizedBox(height: 8),
               Text(
-                appText('Smart Crop Health Check', 'ಸ್ಮಾರ್ಟ್ ಬೆಳೆ ಆರೋಗ್ಯ ಪರಿಶೀಲನೆ'),
+                appText('Smart Crop Health Check', 'à²¸à³à²®à²¾à²°à³à²Ÿà³ à²¬à³†à²³à³† à²†à²°à³‹à²—à³à²¯ à²ªà²°à²¿à²¶à³€à²²à²¨à³†'),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -274,7 +356,7 @@ appBar: AppBar(
               ),
               const SizedBox(height: 8),
               Text(
-                appText('Detect crop diseases using AI', 'AI ಬಳಸಿ ಬೆಳೆ ರೋಗಗಳನ್ನು ಪತ್ತೆಹಚ್ಚಿ'),
+                appText('Detect crop diseases using AI', 'AI à²¬à²³à²¸à²¿ à²¬à³†à²³à³† à²°à³‹à²—à²—à²³à²¨à³à²¨à³ à²ªà²¤à³à²¤à³†à²¹à²šà³à²šà²¿'),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade700,
@@ -287,7 +369,7 @@ appBar: AppBar(
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  appText('1. Select your crop', '1. ನಿಮ್ಮ ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ'),
+                  appText('1. Select your crop', '1. à²¨à²¿à²®à³à²® à²¬à³†à²³à³†à²¯à²¨à³à²¨à³ à²†à²¯à³à²•à³†à²®à²¾à²¡à²¿'),
                   style: TextStyle(
                     fontSize: 19,
                     fontWeight: FontWeight.bold,
@@ -324,7 +406,7 @@ appBar: AppBar(
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    appText('2. Add a leaf photo', '2. ಎಲೆಯ ಫೋಟೋ ಸೇರಿಸಿ'),
+                    appText('2. Add a leaf photo', '2. à²Žà²²à³†à²¯ à²«à³‹à²Ÿà³‹ à²¸à³‡à²°à²¿à²¸à²¿'),
                     style: TextStyle(
                       fontSize: 19,
                       fontWeight: FontWeight.bold,
@@ -344,7 +426,7 @@ appBar: AppBar(
                   ),
                 if (_selectedImage != null)
                   const SizedBox(height: 15),
-                
+
               Column(
                 children: [
                   Row(
@@ -353,7 +435,7 @@ appBar: AppBar(
                         child: ElevatedButton.icon(
                           onPressed: _isPredicting ? null : _takePhoto,
                           icon: const Icon(Icons.camera_alt),
-                          label: Text(appText('Take Photo', 'ಫೋಟೋ ತೆಗೆಯಿರಿ')),
+                          label: Text(appText('Take Photo', 'à²«à³‹à²Ÿà³‹ à²¤à³†à²—à³†à²¯à²¿à²°à²¿')),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
@@ -367,7 +449,7 @@ appBar: AppBar(
                         child: OutlinedButton.icon(
                           onPressed: _isPredicting ? null : _pickFromGallery,
                           icon: const Icon(Icons.photo_library),
-                          label: Text(appText('Gallery', 'ಗ್ಯಾಲರಿ')),
+                          label: Text(appText('Gallery', 'à²—à³à²¯à²¾à²²à²°à²¿')),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
@@ -384,7 +466,7 @@ appBar: AppBar(
                     child: OutlinedButton.icon(
                       onPressed: _isPredicting ? null : _pickFromFiles,
                       icon: const Icon(Icons.folder_open),
-                      label: Text(appText('Upload from Files', 'ಫೈಲ್‌ಗಳಿಂದ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ')),
+                      label: Text(appText('Upload from Files', 'à²«à³ˆà²²à³â€Œà²—à²³à²¿à²‚à²¦ à²…à²ªà³â€Œà²²à³‹à²¡à³ à²®à²¾à²¡à²¿')),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
@@ -401,7 +483,7 @@ appBar: AppBar(
                 const CircularProgressIndicator(),
                 const SizedBox(height: 10),
                 Text(
-                  appText('AI is analyzing the leaf...', 'AI ಎಲೆಯನ್ನು ವಿಶ್ಲೇಷಿಸುತ್ತಿದೆ...'),
+                  appText('AI is analyzing the leaf...', 'AI à²Žà²²à³†à²¯à²¨à³à²¨à³ à²µà²¿à²¶à³à²²à³‡à²·à²¿à²¸à³à²¤à³à²¤à²¿à²¦à³†...'),
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                   ),
@@ -481,7 +563,7 @@ appBar: AppBar(
           ),
           const SizedBox(height: 10),
           Text(
-            appText('AI ANALYSIS', 'AI ವಿಶ್ಲೇಷಣೆ'),
+            appText('AI ANALYSIS', 'AI à²µà²¿à²¶à³à²²à³‡à²·à²£à³†'),
             style: TextStyle(
               fontSize: 13,
               letterSpacing: 1.2,
@@ -530,7 +612,7 @@ appBar: AppBar(
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              appText('Confidence', 'ವಿಶ್ವಾಸ ಮಟ್ಟ'),
+              appText('Confidence', 'à²µà²¿à²¶à³à²µà²¾à²¸ à²®à²Ÿà³à²Ÿ'),
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -591,10 +673,10 @@ appBar: AppBar(
                 Expanded(
                   child: Text(
                     confidence >= 0.70
-                        ? appText('The AI is confident in this prediction.', 'ಈ ಮುನ್ಸೂಚನೆಯ ಬಗ್ಗೆ AI ಗೆ ಹೆಚ್ಚಿನ ವಿಶ್ವಾಸವಿದೆ.')
+                        ? appText('The AI is confident in this prediction.', 'à²ˆ à²®à³à²¨à³à²¸à³‚à²šà²¨à³†à²¯ à²¬à²—à³à²—à³† AI à²—à³† à²¹à³†à²šà³à²šà²¿à²¨ à²µà²¿à²¶à³à²µà²¾à²¸à²µà²¿à²¦à³†.')
                         : confidence >= 0.50
-                            ? appText('The prediction has moderate confidence. Check the image quality.', 'ಮುನ್ಸೂಚನೆಯ ವಿಶ್ವಾಸ ಮಧ್ಯಮವಾಗಿದೆ. ಚಿತ್ರದ ಗುಣಮಟ್ಟವನ್ನು ಪರಿಶೀಲಿಸಿ.')
-                            : appText('Low confidence. Please take a clearer leaf photo.', 'ವಿಶ್ವಾಸ ಕಡಿಮೆಯಾಗಿದೆ. ದಯವಿಟ್ಟು ಎಲೆಯ ಸ್ಪಷ್ಟವಾದ ಫೋಟೋ ತೆಗೆಯಿರಿ.'),
+                            ? appText('The prediction has moderate confidence. Check the image quality.', 'à²®à³à²¨à³à²¸à³‚à²šà²¨à³†à²¯ à²µà²¿à²¶à³à²µà²¾à²¸ à²®à²§à³à²¯à²®à²µà²¾à²—à²¿à²¦à³†. à²šà²¿à²¤à³à²°à²¦ à²—à³à²£à²®à²Ÿà³à²Ÿà²µà²¨à³à²¨à³ à²ªà²°à²¿à²¶à³€à²²à²¿à²¸à²¿.')
+                            : appText('Low confidence. Please take a clearer leaf photo.', 'à²µà²¿à²¶à³à²µà²¾à²¸ à²•à²¡à²¿à²®à³†à²¯à²¾à²—à²¿à²¦à³†. à²¦à²¯à²µà²¿à²Ÿà³à²Ÿà³ à²Žà²²à³†à²¯ à²¸à³à²ªà²·à³à²Ÿà²µà²¾à²¦ à²«à³‹à²Ÿà³‹ à²¤à³†à²—à³†à²¯à²¿à²°à²¿.'),
                     style: TextStyle(
                       color: confidenceColor,
                       fontWeight: FontWeight.w500,
@@ -612,7 +694,7 @@ appBar: AppBar(
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                appText('3. Disease Advisory', '3. ರೋಗದ ಸಲಹೆ'),
+                appText('3. Disease Advisory', '3. à²°à³‹à²—à²¦ à²¸à²²à²¹à³†'),
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -621,11 +703,45 @@ appBar: AppBar(
             ),
             const SizedBox(height: 15),
             _buildLanguageSelector(),
+            const SizedBox(height: 12),
+
+Wrap(
+  spacing: 10,
+  runSpacing: 10,
+  alignment: WrapAlignment.center,
+  children: [
+    ElevatedButton.icon(
+      onPressed: _speakAdvisory,
+      icon: const Icon(Icons.volume_up),
+      label: Text(
+        _selectedLanguage == 'kn'
+            ? 'à²¸à²²à²¹à³† à²•à³‡à²³à²¿'
+            : 'Listen to Advice',
+      ),
+    ),
+    OutlinedButton.icon(
+      onPressed: _pauseSpeech,
+      icon: const Icon(Icons.pause),
+      label: Text(
+        _selectedLanguage == 'kn' ? 'à²µà²¿à²°à²¾à²®' : 'Pause',
+      ),
+    ),
+    OutlinedButton.icon(
+      onPressed: _stopSpeech,
+      icon: const Icon(Icons.stop),
+      label: Text(
+        _selectedLanguage == 'kn' ? 'à²¨à²¿à²²à³à²²à²¿à²¸à²¿' : 'Stop',
+      ),
+    ),
+  ],
+),
+
+const SizedBox(height: 12),
             const SizedBox(height: 18),
             _advisorySection(
               title: _selectedLanguage == 'en'
-                  ? appText('About the Disease', 'ರೋಗದ ಬಗ್ಗೆ')
-                  : 'ರೋಗದ ಬಗ್ಗೆ',
+                  ? appText('About the Disease', 'à²°à³‹à²—à²¦ à²¬à²—à³à²—à³†')
+                  : 'à²°à³‹à²—à²¦ à²¬à²—à³à²—à³†',
               icon: Icons.info_outline,
               text: _getAdvisoryText('about'),
               color: Colors.blue,
@@ -633,8 +749,8 @@ appBar: AppBar(
             const SizedBox(height: 15),
             _advisorySection(
               title: _selectedLanguage == 'en'
-                  ? appText('Treatment', 'ಚಿಕಿತ್ಸೆ')
-                  : 'ಚಿಕಿತ್ಸೆ',
+                  ? appText('Treatment', 'à²šà²¿à²•à²¿à²¤à³à²¸à³†')
+                  : 'à²šà²¿à²•à²¿à²¤à³à²¸à³†',
               icon: Icons.medical_services_outlined,
               text: _getAdvisoryText('treatment'),
               color: Colors.orange,
@@ -642,8 +758,8 @@ appBar: AppBar(
             const SizedBox(height: 15),
             _advisorySection(
               title: _selectedLanguage == 'en'
-                  ? appText('Prevention', 'ತಡೆಗಟ್ಟುವಿಕೆ')
-                  : 'ತಡೆಗಟ್ಟುವಿಕೆ',
+                  ? appText('Prevention', 'à²¤à²¡à³†à²—à²Ÿà³à²Ÿà³à²µà²¿à²•à³†')
+                  : 'à²¤à²¡à³†à²—à²Ÿà³à²Ÿà³à²µà²¿à²•à³†',
               icon: Icons.shield_outlined,
               text: _getAdvisoryText('prevention'),
               color: Colors.green,
@@ -703,7 +819,7 @@ appBar: AppBar(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  'ಕನ್ನಡ',
+                  'à²•à²¨à³à²¨à²¡',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
@@ -838,7 +954,7 @@ appBar: AppBar(
     );
   }
 }
-  
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -889,7 +1005,7 @@ class _HomePageState extends State<HomePage> {
                           onTap: () => _setLanguage('en'),
                         ),
                         _LanguageOption(
-                          label: 'ಕನ್ನಡ',
+                          label: 'à²•à²¨à³à²¨à²¡',
                           selected: kannada,
                           onTap: () => _setLanguage('kn'),
                         ),
@@ -916,41 +1032,118 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  kannada ? 'ಸ್ಮಾರ್ಟ್ ಕೃಷಿ ಇಲ್ಲಿಂದ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ' : 'Smart farming starts here',
+                  kannada
+                      ? 'à²¸à³à²®à²¾à²°à³à²Ÿà³ à²•à³ƒà²·à²¿ à²‡à²²à³à²²à²¿à²‚à²¦ à²ªà³à²°à²¾à²°à²‚à²­à²µà²¾à²—à³à²¤à³à²¤à²¦à³†'
+                      : 'Smart farming starts here',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 16, color: Colors.black54),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black54,
+                  ),
                 ),
                 const SizedBox(height: 40),
+                // Farmer Dashboard card
                 _HomeOptionCard(
-                  icon: Icons.cloud_outlined,
-                  title: kannada ? 'ಹವಾಮಾನ' : 'Weather',
-                  subtitle: kannada ? 'ಮುನ್ಸೂಚನೆ, ಮಳೆ ಮತ್ತು ಬಿಸಿಲಿನ ಎಚ್ಚರಿಕೆಗಳು' : 'Forecasts, rain and heat alerts',
+                  icon: Icons.dashboard_outlined,
+                  title: kannada ? 'à²°à³ˆà²¤à²° à²¡à³à²¯à²¾à²¶à³â€Œà²¬à³‹à²°à³à²¡à³' : 'Farmer Dashboard',
+                  subtitle: kannada
+                      ? 'à²’à²Ÿà³à²Ÿà³ à²¸à³à²•à³à²¯à²¾à²¨à³â€Œà²—à²³à³ à²®à²¤à³à²¤à³ à²¬à³†à²³à³† à²†à²°à³‹à²—à³à²¯à²¦ à²µà²¿à²µà²°à²—à²³à³'
+                      : 'View total scans and crop health statistics',
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute<void>(builder: (_) => const WeatherPage()),
+                      MaterialPageRoute<void>(
+                        builder: (_) => const FarmerDashboardPage(),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 18),
+                // Weather card
+                _HomeOptionCard(
+                  icon: Icons.cloud_outlined,
+                  title: kannada ? 'à²¹à²µà²¾à²®à²¾à²¨' : 'Weather',
+                  subtitle: kannada
+                      ? 'à²®à³à²¨à³à²¸à³‚à²šà²¨à³†, à²®à²³à³† à²®à²¤à³à²¤à³ à²¬à²¿à²¸à²¿à²²à²¿à²¨ à²Žà²šà³à²šà²°à²¿à²•à³†à²—à²³à³'
+                      : 'Forecasts, rain and heat alerts',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const WeatherPage(),
+                      ),
                     );
                   },
                 ),
                 const SizedBox(height: 18),
+
+                // AI Farming Assistant card
                 _HomeOptionCard(
-                  icon: Icons.eco_outlined,
-                  title: kannada ? 'ಸಸ್ಯ ರೋಗ ಪತ್ತೆ' : 'Plant Disease Detection',
-                  subtitle: kannada ? 'ಬೆಳೆ ಎಲೆಯ ಚಿತ್ರವನ್ನು ತೆಗೆಯಿರಿ ಅಥವಾ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ' : 'Scan or upload a crop leaf image',
+                  icon: Icons.chat_bubble_outline,
+                  title: kannada
+                      ? 'AI à²•à³ƒà²·à²¿ à²¸à²¹à²¾à²¯à²•'
+                      : 'AI Farming Assistant',
+                  subtitle: kannada
+                      ? 'à²•à³ƒà²·à²¿ à²ªà³à²°à²¶à³à²¨à³†à²—à²³à²¿à²—à³† à²‰à²¤à³à²¤à²° à²ªà²¡à³†à²¯à²¿à²°à²¿'
+                      : 'Ask questions about farming and crop care',
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute<void>(builder: (_) => const PredictionPage()),
+                      MaterialPageRoute<void>(
+                        builder: (_) => const FarmingChatPage(),
+                      ),
                     );
                   },
                 ),
+                const SizedBox(height: 18),
+
+                // Plant Disease Detection card
+                _HomeOptionCard(
+                  icon: Icons.eco_outlined,
+                  title: kannada
+                      ? 'à²¸à²¸à³à²¯ à²°à³‹à²— à²ªà²¤à³à²¤à³†'
+                      : 'Plant Disease Detection',
+                  subtitle: kannada
+                      ? 'à²¬à³†à²³à³† à²Žà²²à³†à²¯ à²šà²¿à²¤à³à²°à²µà²¨à³à²¨à³ à²¤à³†à²—à³†à²¯à²¿à²°à²¿ à²…à²¥à²µà²¾ à²…à²ªà³â€Œà²²à³‹à²¡à³ à²®à²¾à²¡à²¿'
+                      : 'Scan or upload a crop leaf image',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const PredictionPage(),
+                      ),
+                    );
+                  },
+                ),
+                  const SizedBox(height: 18),
+
+                  _HomeOptionCard(
+                    icon: Icons.history,
+                    title: kannada ? 'à²¸à³à²•à³à²¯à²¾à²¨à³ à²‡à²¤à²¿à²¹à²¾à²¸' : 'Scan History',
+                    subtitle: kannada
+                        ? 'à²¹à²¿à²‚à²¦à²¿à²¨ à²¸à³à²•à³à²¯à²¾à²¨à³â€Œà²—à²³à³ à²®à²¤à³à²¤à³ à²šà²¿à²•à²¿à²¤à³à²¸à³†à²¯ à²¸à²²à²¹à³†à²—à²³à²¨à³à²¨à³ à²¨à³‹à²¡à²¿'
+                        : 'View previous scans and treatment advice',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ScanHistoryPage(),
+                        ),
+                      );
+                    },
+                  ),
+
                 const SizedBox(height: 28),
                 Text(
                   kannada
-                      ? 'ಆರೋಗ್ಯಕರ ಬೆಳೆಗಳು ಮತ್ತು ಸುಸ್ಥಿರ ಕೃಷಿಗೆ ಬೆಂಬಲ'
+                      ? 'à²†à²°à³‹à²—à³à²¯à²•à²° à²¬à³†à²³à³†à²—à²³à³ à²®à²¤à³à²¤à³ à²¸à³à²¸à³à²¥à²¿à²° à²•à³ƒà²·à²¿à²—à³† à²¬à³†à²‚à²¬à²²'
                       : 'Supporting healthier crops and sustainable farming',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: Colors.black54),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                  ),
                 ),
               ],
             ),
@@ -960,6 +1153,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
 
 class _LanguageOption extends StatelessWidget {
   final String label;

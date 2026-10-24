@@ -1,0 +1,25 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "agro-care-ai-93ffd",
+          "appId": "1:653482318475:android:86f95b67496bab115b128e",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "agro-care-ai-93ffd",
+          "configurations": {
+            "android": "1:653482318475:android:86f95b67496bab115b128e",
+            "ios": "1:653482318475:ios:73ad27344d94a7d95b128e",
+            "macos": "1:653482318475:ios:73ad27344d94a7d95b128e",
+            "web": "1:653482318475:web:2e6a4de3002e05575b128e",
+            "windows": "1:653482318475:web:b8729afbf1b580425b128e"
+          }
+        }
+      }
+    }
+  }
+}

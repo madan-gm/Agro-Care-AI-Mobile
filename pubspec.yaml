@@ -22,6 +22,13 @@ dependencies:
   geocoding: ^5.0.0
   http: ^1.6.0
   flutter_local_notifications: ^22.3.1
+  firebase_core: ^5.0.0
+  firebase_ai: ^5.0.0
+  firebase_app_check: ^0.5.0
+  flutter_markdown: ^0.7.7
+  flutter_tts: ^4.2.5
+  sqflite: ^2.4.2+1
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
