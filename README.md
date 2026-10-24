@@ -1,72 +1,40 @@
-# 🌱 Agro Care AI – AI-Powered Crop Disease Detection and Farming Assistant
+# 🌱 Agro Care AI
 
-**AI-Based Crop Disease Detection and Advisory System for Sustainable Farming**
+### AI-Based Crop Disease Detection and Advisory System
 
-Agro Care AI is a Flutter-based mobile application designed to help farmers identify possible crop diseases, understand weather conditions, and access practical farming guidance. It combines on-device AI inference with weather information, bilingual voice advisory, scan history, and an AI farming assistant to support informed and sustainable farming decisions.
-
-The project aims to make crop health information more accessible through a simple mobile application.
+Agro Care AI is a Flutter-based mobile application that helps farmers identify possible crop diseases from leaf images and access useful farming guidance. It combines on-device AI, weather information, bilingual voice advisory, and an AI farming assistant to support better crop management decisions.
 
 ## 🎯 Problem Statement
 
-Farmers may struggle to identify crop diseases at an early stage and choose suitable treatments. Incorrect identification and unnecessary pesticide use can affect crop productivity, increase costs, and harm the environment.
+Identifying crop diseases at an early stage can be difficult for farmers. Incorrect identification and unsuitable treatments can affect crop productivity, increase costs, and harm the environment.
 
-Agro Care AI addresses this problem by providing AI-based leaf image analysis, relevant advisory information, and digital farming support through a mobile application.
+Agro Care AI aims to make crop disease identification and farming information more accessible through a simple, AI-powered mobile application.
 
-## ✨ Key Features
+## ✨ Features
 
-### 🌿 1. AI-Based Crop Disease Detection
-- Uses a trained MobileNetV2 model converted to TensorFlow Lite.
-- Analyzes crop leaf images directly on the device.
-- Displays the predicted disease class and model confidence score.
-- Supports Tomato, Potato, and Corn classes included in the configured model.
-
-### 🩺 2. Crop Disease Advisory
-- Displays treatment, prevention, and crop care guidance from the available advisory dataset.
-- Helps users understand the recommended next steps after a scan.
-- Provides advisory information in English and Kannada where translations are available.
-
-### 🔊 3. Bilingual Voice Advisory
-- Supports English and Kannada language selection.
-- Uses text-to-speech to read farming advice aloud.
-- Provides Listen, Pause, and Stop controls.
-
-### 🌦️ 4. Weather Information
-- Retrieves weather information using the Open-Meteo API.
-- Supports location-based weather information where location access is configured.
-- Displays current weather conditions and forecast information through the weather page.
-- Helps users consider weather conditions when planning farming activities.
-
-### 🤖 5. AI Farming Assistant
-- Provides a chat interface for general farming questions.
-- Uses Firebase AI integration for AI-generated responses.
-- Helps users access farming information through a conversational interface.
-
-### 📋 6. Scan History
-- Saves previous crop scans in a local SQLite database.
-- Stores the crop name, predicted disease, confidence score, scan image, timestamp, and available advisory information.
-- Allows users to review and delete previous scan records.
-
-### 📊 7. Farmer Dashboard
-- Displays the total number of saved scans.
-- Summarizes predictions classified as healthy and non-healthy.
-- Provides a quick overview of the scan history.
-- Supports refreshing the dashboard statistics.
-
-**Note:** Dashboard statistics are based on model predictions stored in scan history. They do not represent laboratory-confirmed diagnoses.
+- **AI-Based Disease Detection:** Analyzes crop leaf images using a TensorFlow Lite model.
+- **Multiple Crop Support:** Supports Tomato, Potato, and Corn disease classes included in the trained model.
+- **Crop Disease Advisory:** Provides available treatment, prevention, and crop care guidance.
+- **English and Kannada Support:** Offers bilingual interface and advisory content where available.
+- **Voice Advisory:** Reads farming advice aloud with Listen, Pause, and Stop controls.
+- **Weather Information:** Displays weather conditions and forecasts using the Open-Meteo API.
+- **AI Farming Assistant:** Provides conversational farming guidance using Firebase AI integration.
+- **Scan History:** Saves previous scans locally, including prediction details, confidence, images, timestamps, and available advisory information.
+- **Farmer Dashboard:** Summarizes total scans and healthy or non-healthy predictions based on saved scan results.
 
 ## 🛠️ Technologies Used
 
 | Technology | Purpose |
 |---|---|
 | Flutter and Dart | Mobile application development |
-| TensorFlow Lite | On-device AI inference |
 | MobileNetV2 | Crop disease classification model |
+| TensorFlow Lite | On-device model inference |
 | SQLite and sqflite | Local scan history storage |
 | Flutter TTS | Voice advisory |
 | Open-Meteo API | Weather information |
-| Geolocator | Location access, where configured |
+| Geolocator | Location access where configured |
 | Firebase AI | AI farming assistant |
-| Git and GitHub | Version control and source code hosting |
+| Git and GitHub | Version control |
 
 ## 🏗️ Project Structure
 
@@ -75,34 +43,26 @@ agro_care_ai_mobile/
 ├── android/
 ├── assets/
 │   ├── advisory/
-│   │   └── advisory.json
 │   ├── models/
-│   │   └── mobilenetv2_finetuned.tflite
-│   ├── test/
 │   └── classes.json
 ├── lib/
 │   ├── main.dart
 │   ├── ai_service.dart
-│   ├── app_language.dart
 │   ├── dashboard_page.dart
 │   ├── farming_chat_page.dart
 │   ├── gemini_chat_service.dart
 │   ├── scan_history_page.dart
 │   ├── scan_history_service.dart
 │   ├── weather_page.dart
-│   └── [other application and service files]
+│   └── other service and language files
 ├── ios/
 ├── macos/
 ├── web/
 ├── windows/
 ├── pubspec.yaml
 ├── pubspec.lock
-├── firebase.json
-├── .firebaserc
 └── README.md
 ```
-
-The project also contains platform-specific configuration and generated Flutter files. Exact file availability may vary by development environment.
 
 ## ⚙️ Installation and Setup
 
@@ -110,9 +70,9 @@ The project also contains platform-specific configuration and generated Flutter 
 
 - Flutter SDK and Dart SDK
 - Android Studio or Visual Studio Code
-- Android device or emulator
+- An Android device or emulator
 - Git
-- Internet connection for weather information and Firebase-powered AI features
+- Internet access for weather and Firebase-powered features
 
 ### 1. Clone the repository
 
@@ -136,26 +96,18 @@ flutter pub get
 
 The AI Farming Assistant requires Firebase configuration.
 
-1. Open the Firebase Console and select the appropriate Firebase project or create a new one.
+1. Open the Firebase Console and select or create a Firebase project.
 2. Register the Android application using the package name configured in the project.
-3. Download the Android `google-services.json` configuration file.
-4. Place it in:
+3. Add the required Firebase configuration file to `android/app/`.
+4. Configure Firebase AI and the necessary service permissions.
 
-```text
-android/app/google-services.json
-```
-
-5. Configure Firebase AI and any required access permissions for the selected Firebase project.
-
-Do not commit private credentials, service-account keys, or Firebase App Check debug tokens to the repository. Each developer should configure their own required local Firebase settings.
+Keep private credentials and Firebase App Check debug tokens out of the repository. Use your own Firebase configuration when setting up the application.
 
 ### 5. Check the Flutter environment
 
 ```bash
 flutter doctor
 ```
-
-Resolve any required environment setup issues before running the application.
 
 ### 6. Run the application
 
@@ -165,66 +117,34 @@ Connect an Android device with USB debugging enabled or start an emulator, then 
 flutter run
 ```
 
-## 🌦️ Weather and Location
+## ⚠️ Limitations
 
-Agro Care AI uses the Open-Meteo API for weather information. Location-based features require the relevant permissions and a working location service. An internet connection is needed to retrieve updated weather data.
+- Prediction results depend on the trained model and input image quality.
+- Performance may vary under real-world field conditions.
+- Advisory content is limited to the available dataset.
+- Weather and AI assistant features require the relevant services and internet connectivity.
+- Scan history is stored locally and does not automatically synchronize across devices.
+- Dashboard statistics reflect AI predictions, not professionally confirmed diagnoses.
 
-Weather information and recommendations should be considered supporting information, not a guarantee of future weather conditions or crop outcomes.
+The application provides decision-support information and should not replace advice from qualified agricultural professionals.
 
-## 🧠 AI Model and Limitations
+## 🚀 Future Improvements
 
-- Prediction quality depends on the trained model, its supported classes, and the quality of the input image.
-- Images taken in real farming environments may produce different results from images used during model training.
-- The application identifies possible diseases; its predictions are not a substitute for confirmation by an agricultural expert.
-- Advisory content is limited to the information available in the configured advisory dataset.
-- Weather and AI assistant features require the relevant external services and configuration.
-- Scan history is stored locally on the device and may not automatically synchronize across devices.
-- Dashboard statistics reflect saved AI predictions, not verified crop health measurements.
-
-Users should consult qualified agricultural professionals before making significant crop treatment decisions.
-
-## 🌍 Sustainable Development Goals (SDGs)
-
-Agro Care AI supports the following Sustainable Development Goals:
-
-- **SDG 2 – Zero Hunger:** Supports crop health awareness and informed farming decisions.
-- **SDG 12 – Responsible Consumption and Production:** Encourages informed treatment decisions and awareness of unnecessary pesticide use.
-- **SDG 13 – Climate Action:** Provides weather information that can help farmers consider environmental conditions in their planning.
-
-These are the project's intended contributions; actual impact depends on how the application is used and validated.
-
-## 🚀 Future Enhancements
-
-- Improve model accuracy using diverse field images and additional validation.
-- Expand supported crops and disease classes.
-- Improve Kannada advisory coverage.
-- Add downloadable or shareable crop scan reports.
-- Enhance farming recommendations using crop, location, and weather context.
-- Evaluate reliable background weather alerts and offline capabilities.
-- Conduct field testing with farmers and agricultural experts.
+- Improve model performance using diverse real-world crop images.
+- Add support for more crops and disease classes.
+- Expand Kannada advisory content.
+- Improve personalized farming recommendations.
+- Explore offline support and reliable background weather alerts.
+- Add downloadable and shareable scan reports.
 
 ## 👨‍💻 Developer
 
 **Madan G M**  
 RNS Institute of Technology (RNSIT), Bengaluru
 
-- GitHub: https://github.com/madan-gm
+- GitHub Profile: https://github.com/madan-gm
 - Project Repository: https://github.com/madan-gm/Agro-Care-AI-Mobile
-
-## 📸 Application Screenshots and Demo
-
-Add screenshots of the following application screens to help reviewers understand the project:
-
-1. Home screen
-2. Crop disease detection result
-3. Disease advisory and voice controls
-4. Farmer Dashboard
-5. Scan History
-6. Weather page
-7. AI Farming Assistant
-
-**Demo Video:** Add your NEURA X demonstration video link here after uploading it.
 
 ## 📄 License
 
-A license has not yet been specified for this project. Add an appropriate open-source license if you intend to distribute the source code under specific reuse terms.
+No license has been specified yet.
