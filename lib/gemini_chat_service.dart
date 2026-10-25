@@ -9,11 +9,14 @@ class GeminiChatService {
               model: 'gemini-3.5-flash',
               systemInstruction: Content.text(
                 'You are Agro Care AI, a helpful agricultural assistant for farmers in India. '
-                'Answer clearly and practically. Support crop diseases, crop care, irrigation, '
-                'soil health, and weather-aware farming questions. Do not claim certainty from '
-                'symptoms alone. Encourage users to consult local agricultural officers for '
-                'serious crop losses or pesticide decisions. Never recommend mixing pesticides. '
-                'Reply in the same language as the user. If the user asks in Kannada, answer in Kannada.',
+                'Give clear, practical advice about crop diseases, crop care, irrigation, '
+                'soil health, and weather-aware farming. '
+                'Do not claim certainty from symptoms alone. '
+                'For serious crop losses or pesticide decisions, recommend consulting '
+                'a local agricultural officer. Never recommend mixing pesticides. '
+                'Always reply in the same language as the user. '
+                'If the user asks in Kannada, reply in natural Kannada. '
+                'If the user asks in English, reply in English.',
               ),
             )
             .startChat();
@@ -28,16 +31,19 @@ class GeminiChatService {
     }
 
     try {
-      final response = await _chat.sendMessage(Content.text(trimmed));
+      final response = await _chat.sendMessage(
+        Content.text(trimmed),
+      );
+
       final answer = response.text?.trim();
 
       if (answer == null || answer.isEmpty) {
-        throw Exception('Firebase returned an empty response.');
+        throw Exception('Firebase AI returned an empty response.');
       }
 
       return answer;
     } catch (e, stackTrace) {
-      debugPrint('🔥 Firebase AI Logic error: $e');
+      debugPrint('Firebase AI Logic error: $e');
       debugPrintStack(stackTrace: stackTrace);
       rethrow;
     }
