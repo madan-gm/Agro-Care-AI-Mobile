@@ -148,3 +148,9 @@ RNS Institute of Technology (RNSIT), Bengaluru
 ## 📄 License
 
 No license has been specified yet.
+
+
+## Demo and Downloads
+
+- **Demo Video:** [Watch Agro Care AI Demo](https://drive.google.com/file/d/14tPjAdihy7OFb9ot_jXO_WgMuBF_2K4j/view?usp=sharing)
+- **Download Android APK:** [Download Agro Care AI](https://drive.google.com/file/d/1jpXEmbG6UVM3VkoHHNWDCAt-jl1QiDc5/view?usp=sharing)
